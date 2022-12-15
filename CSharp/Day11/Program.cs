@@ -1,4 +1,6 @@
 ﻿using System.Numerics;
+using System.Text.RegularExpressions;
+
 using Utils;
 
 var code = new Code();
@@ -8,241 +10,136 @@ code.Run();
 
 public class Code : Day
 {
-    public Dictionary<int, Monkey> Monkeys { get; set; } = new Dictionary<int, Monkey>();
+    // Monkey item lists get changed during part 1, which messes up part 2
+    // Keep two independent sets of monkeys for each part
+    public IList<Monkey> Part1Monkeys { get; set; }
+    public IList<Monkey> Part2Monkeys { get; set; }
+    public long LCM { get; set; }
 
     public override void ParseInput(string filePath)
     {
-        if (filePath == "input.txt")
+        Part1Monkeys = new List<Monkey>();
+        Part2Monkeys = new List<Monkey>();
+
+        var lines = File.ReadAllLines(filePath);
+
+        for (int i = 0; i < lines.Length; i += 7)
         {
-            Monkeys = new Dictionary<int, Monkey>()
-            {
-                {
-                    0,
-                    new Monkey()
-                    {
-                        Items = new List<BigInteger> { 54, 82, 90, 88, 86, 54 },
-                        Operation = (old) => old * 7,
-                        Test = (level) => level % 11 == 0
-                    }
-                },
-                {
-                    1,
-                    new Monkey()
-                    {
-                        Items = new List<BigInteger> { 91, 65 },
-                        Operation = (old) => old * 13,
-                        Test = (level) => level % 5 == 0
-                    }
-                },
-                {
-                    2,
-                    new Monkey()
-                    {
-                        Items = new List<BigInteger> { 62, 54, 57, 92, 83, 63, 63 },
-                        Operation = (old) => old + 1,
-                        Test = (level) => level % 7 == 0
-                    }
-                },
-                {
-                    3,
-                    new Monkey()
-                    {
-                        Items = new List<BigInteger> { 67, 72, 68 },
-                        Operation = (old) => old * old,
-                        Test = (level) => level % 2 == 0
-                    }
-                },
-                {
-                    4,
-                    new Monkey()
-                    {
-                        Items = new List<BigInteger> { 68, 89, 90, 86, 84, 57, 72, 84 },
-                        Operation = (old) => old + 7,
-                        Test = (level) => level % 17 == 0
-                    }
-                },
-                {
-                    5,
-                    new Monkey()
-                    {
-                        Items = new List<BigInteger> { 79, 83, 64, 58 },
-                        Operation = (old) => old + 6,
-                        Test = (level) => level % 13 == 0
-                    }
-                },
-                {
-                    6,
-                    new Monkey()
-                    {
-                        Items = new List<BigInteger> { 96, 72, 89, 70, 88 },
-                        Operation = (old) => old + 4,
-                        Test = (level) => level % 3 == 0
-                    }
-                },
-                {
-                    7,
-                    new Monkey()
-                    {
-                        Items = new List<BigInteger> { 79 },
-                        Operation = (old) => old + 8,
-                        Test = (level) => level % 19 == 0
-                    }
-                }
-            };
-
-            Monkeys[0].TrueMonkey = Monkeys[2];
-            Monkeys[0].FalseMonkey = Monkeys[6];
-
-            Monkeys[1].TrueMonkey = Monkeys[7];
-            Monkeys[1].FalseMonkey = Monkeys[4];
-
-            Monkeys[2].TrueMonkey = Monkeys[1];
-            Monkeys[2].FalseMonkey = Monkeys[7];
-
-            Monkeys[3].TrueMonkey = Monkeys[0];
-            Monkeys[3].FalseMonkey = Monkeys[6];
-
-            Monkeys[4].TrueMonkey = Monkeys[3];
-            Monkeys[4].FalseMonkey = Monkeys[5];
-
-            Monkeys[5].TrueMonkey = Monkeys[3];
-            Monkeys[5].FalseMonkey = Monkeys[0];
-
-            Monkeys[6].TrueMonkey = Monkeys[1];
-            Monkeys[6].FalseMonkey = Monkeys[2];
-
-            Monkeys[7].TrueMonkey = Monkeys[4];
-            Monkeys[7].FalseMonkey = Monkeys[5];
+            Part1Monkeys.Add(new Monkey(lines.Skip(i).Take(7).ToList()));
+            Part2Monkeys.Add(new Monkey(lines.Skip(i).Take(7).ToList()));
         }
-        else
-        {
-            Monkeys = new Dictionary<int, Monkey>()
-            {
-                {
-                    0,
-                    new Monkey()
-                    {
-                        Items = new List<BigInteger> { 79, 98 },
-                        Operation = (old) => old * 19,
-                        Test = (level) => level % 23 == 0
-                    }
-                },
-                {
-                    1,
-                    new Monkey()
-                    {
-                        Items = new List<BigInteger> { 54, 65, 75, 74 },
-                        Operation = (old) => old + 6,
-                        Test = (level) => level % 19 == 0
-                    }
-                },
-                {
-                    2,
-                    new Monkey()
-                    {
-                        Items = new List<BigInteger> { 79, 60, 97 },
-                        Operation = (old) => old * old,
-                        Test = (level) => level % 13 == 0
-                    }
-                },
-                {
-                    3,
-                    new Monkey()
-                    {
-                        Items = new List<BigInteger> { 74 },
-                        Operation = (old) => old + 3,
-                        Test = (level) => level % 17 == 0
-                    }
-                }
-            };
 
-            Monkeys[0].TrueMonkey = Monkeys[2];
-            Monkeys[0].FalseMonkey = Monkeys[3];
-
-            Monkeys[1].TrueMonkey = Monkeys[2];
-            Monkeys[1].FalseMonkey = Monkeys[0];
-
-            Monkeys[2].TrueMonkey = Monkeys[1];
-            Monkeys[2].FalseMonkey = Monkeys[3];
-
-            Monkeys[3].TrueMonkey = Monkeys[0];
-            Monkeys[3].FalseMonkey = Monkeys[1];
-        }
+        LCM = Helpers.LCM(Part2Monkeys.Select(m => m.Divisor));
     }
 
     public override void PartOne()
     {
-        BigInt num = "321681435089146815617";
+        for (int i = 0; i < 20; i++)
+        {
+            DoMonkeyBusiness(Part1Monkeys, true);
+        }
 
-        num += "821681435089146815617";
-
-        //for (int i = 0; i < 10000; i++)
-        //{
-        //    foreach ((int id, Monkey monkey) in Monkeys.OrderBy(kvp => kvp.Key))
-        //    {
-        //        monkey.InspectAllItems();
-        //    }
-        //}
-
-        //var monkeys = Monkeys.Values.OrderByDescending(m => m.InspectedItems).Take(2).ToList();
-
-        //Console.WriteLine(monkeys[0].InspectedItems * monkeys[1].InspectedItems);
+        Console.WriteLine(Part1Monkeys.Select(m => m.NumInspectedItems).OrderByDescending(n => n).Take(2).Aggregate(1, (product, n) => product * n));
     }
 
     public override void PartTwo()
     {
+        for (int i = 0; i < 10000; i++)
+        {
+            DoMonkeyBusiness(Part2Monkeys, false);
+        }
 
+        Console.WriteLine(Part2Monkeys.Select(m => m.NumInspectedItems).OrderByDescending(n => n).Take(2).Aggregate((BigInteger)1, (product, n) => product * n));
+    }
+
+    public void DoMonkeyBusiness(IList<Monkey> monkeys, bool canBeCalmed)
+    {
+        for (int i = 0; i < monkeys.Count; i++)
+        {
+            while (monkeys[i].HasItems())
+            {
+                monkeys[i].NumInspectedItems++;
+
+                var item = monkeys[i].Operation(monkeys[i].TakeItem());
+
+                if (canBeCalmed)
+                {
+                    item /= 3;
+                }
+                else
+                {
+                    // To ensure we stay in a numeric range that can be represented by a long, but without messing up our divisibility by
+                    // any of the monkeys' test divisors, we can take the modulo of the current item and the least common multiple of all
+                    // the monkeys' test divisors
+                    item %= LCM;
+                }
+
+                if (item % monkeys[i].Divisor == 0)
+                {
+                    monkeys[monkeys[i].TrueMonkey].GiveItem(item);
+                }
+                else
+                {
+                    monkeys[monkeys[i].FalseMonkey].GiveItem(item);
+                }
+            }
+        }
     }
 }
 
-
-
 public class Monkey
 {
-    public int ID { get; set; }
+    private static Regex ITEMS_REGEX        = new Regex(@"Starting items: (.*)$",              RegexOptions.Compiled);
+    private static Regex OPERATION_REGEX    = new Regex(@"Operation: new = old (\*|\+) (\S+)", RegexOptions.Compiled);
+    private static Regex DIVISOR_REGEX      = new Regex(@"Test: divisible by (\d+)",           RegexOptions.Compiled);
+    private static Regex TRUE_MONKEY_REGEX  = new Regex(@"If true: throw to monkey (\d+)",     RegexOptions.Compiled);
+    private static Regex FALSE_MONKEY_REGEX = new Regex(@"If false: throw to monkey (\d+)",    RegexOptions.Compiled);
 
-    public List<BigInteger> Items { get; set; } = new List<BigInteger>();
-    public Func<BigInteger, BigInteger> Operation { get; set; }
-    public Func<BigInteger, bool> Test { get; set; }
-    public Monkey TrueMonkey { get; set; }
-    public Monkey FalseMonkey { get; set; }
+    private Queue<long> _items;
 
-    public int InspectedItems { get; set; } = 0;
+    public Func<long, long> Operation         { get; }
+    public long             Divisor           { get; }
+    public int              TrueMonkey        { get; }
+    public int              FalseMonkey       { get; }
+    public int              NumInspectedItems { get; set; }
 
-    public void InspectAllItems()
+    public Monkey(IList<string> monkeyLines)
     {
-        int itemCount = Items.Count;
+        _items = new Queue<long>();
+        NumInspectedItems = 0;
 
-        for (int i = 0; i < itemCount; i++)
+        // Get items
+        Match match = ITEMS_REGEX.Match(monkeyLines[1]);
+        foreach (var num in match.Groups[1].Value.Split(", ").Select(n => long.Parse(n)))
         {
-            InspectOneItem();
-        }
-    }
-
-    public void InspectOneItem()
-    {
-        BigInteger item = Items[0];
-
-        item = Operation(item);
-
-//        item /= 3;
-
-        if (Test(item))
-        {
-            TossItem(item, TrueMonkey);
-        }
-        else
-        {
-            TossItem(item, FalseMonkey);
+            _items.Enqueue(num);
         }
 
-        InspectedItems++;
+        // Get operation
+        match = OPERATION_REGEX.Match(monkeyLines[2]);
+        var op    = match.Groups[1].Value;
+        var right = match.Groups[2].Value;
+        Operation = (old) => op switch
+        {
+            "*" => old * (long.TryParse(right, out var result) ? result : old),
+            "+" => old + (long.TryParse(right, out var result) ? result : old),
+            _   => throw new Exception($"Unrecognized operation {op}")
+        };
+
+        // Get divisor
+        match = DIVISOR_REGEX.Match(monkeyLines[3]);
+        Divisor = int.Parse(match.Groups[1].Value);
+
+        // Get true monkey
+        match = TRUE_MONKEY_REGEX.Match(monkeyLines[4]);
+        TrueMonkey = int.Parse(match.Groups[1].Value);
+
+        // Get false monkey
+        match = FALSE_MONKEY_REGEX.Match(monkeyLines[5]);
+        FalseMonkey = int.Parse(match.Groups[1].Value);
     }
 
-    public void TossItem(BigInteger curWorryLevel, Monkey destMonkey)
-    {
-        Items.RemoveAt(0);
-
-        destMonkey.Items.Add(curWorryLevel);
-    }
+    public bool  HasItems()          => _items.Count > 0;
+    public long TakeItem()           => _items.Dequeue();
+    public void  GiveItem(long item) => _items.Enqueue(item);
 }
